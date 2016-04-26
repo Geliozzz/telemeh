@@ -1,0 +1,24 @@
+--cpu Cortex-M3
+"telemeh\stm32f1xx_it.o"
+"telemeh\main.o"
+"telemeh\stm32f1xx_hal_msp.o"
+"telemeh\uart.o"
+"telemeh\gsm.o"
+"telemeh\startup_stm32f100xb.o"
+"telemeh\system_stm32f1xx.o"
+"telemeh\stm32f1xx_hal_gpio.o"
+"telemeh\stm32f1xx_hal_rcc.o"
+"telemeh\stm32f1xx_hal_tim.o"
+"telemeh\stm32f1xx_hal_dma.o"
+"telemeh\stm32f1xx_hal.o"
+"telemeh\stm32f1xx_hal_rcc_ex.o"
+"telemeh\stm32f1xx_hal_flash_ex.o"
+"telemeh\stm32f1xx_hal_tim_ex.o"
+"telemeh\stm32f1xx_hal_uart.o"
+"telemeh\stm32f1xx_hal_cortex.o"
+"telemeh\stm32f1xx_hal_flash.o"
+"telemeh\stm32f1xx_hal_pwr.o"
+--library_type=microlib --strict --scatter "telemeh\telemeh.sct"
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "telemeh.map" -o telemeh\telemeh.axf
