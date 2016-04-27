@@ -1,3 +1,8 @@
 *.o
 *.d
 *.crf
+MDK-ARM/telemeh/telemeh.axf
+MDK-ARM/telemeh/telemeh.build_log.htm
+MDK-ARM/telemeh/telemeh.htm
+MDK-ARM/telemeh/telemeh.map
+MDK-ARM/telemeh/telemeh_telemeh.dep
