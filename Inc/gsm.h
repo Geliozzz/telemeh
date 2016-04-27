@@ -11,16 +11,22 @@
 
 #include "uart.h"
 #include "string.h"
+#include "stdlib.h"
 #include "stm32f1xx_hal.h"
 
 /** 
-  * @brief 
   */ 
 typedef struct
 {
   char imei[15];
 	char rssi[5];
 }GSMTypeDef;
+
+enum
+{
+	GSM_OK = 0,
+	GSM_TIMEOUT
+};
 
 // Инициализация GSM
 //------------------

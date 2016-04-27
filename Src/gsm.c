@@ -9,6 +9,9 @@
 #include "gsm.h"
 
 #define WAIT_TIMEOUT 1000
+#define URL "http://minachevamir.myjino.ru/rest/add.php?imei="
+
+#define MAX_FAILURES 3
 
 GSMTypeDef gsm;
 char resp[50];
@@ -18,7 +21,6 @@ int GSM_WaitResp(void)
 	char resp_ok[2];
 	uint32_t time_start, time_stop;
 	int temp;
-	int i = 0;
 	
 	time_start = HAL_GetTick();
 	
@@ -27,59 +29,58 @@ int GSM_WaitResp(void)
 		temp = UART_getc();
 		if(temp != -1)
 		{
-			resp[i++] = temp;
 			resp_ok[0] = resp_ok[1];
 			resp_ok[1] = temp;
 		}
 		time_stop = HAL_GetTick();
-		if((time_stop - time_start) > WAIT_TIMEOUT) return 1;
+		if((time_stop - time_start) > WAIT_TIMEOUT) return GSM_TIMEOUT;
 	}
-	return 0;
+	return GSM_OK;
 }
 
 /**
 */
-int GSM_GetIMEI(void)
+int GSM_GetIMEI(UART_HandleTypeDef *gsm_uart)
 {
-	char resp_ok[2];
 	uint32_t time_start, time_stop;
 	int temp;
 	int i = 0;
 	
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+GSN", sizeof("AT+GSN"), 1000);
 	time_start = HAL_GetTick();
-	
-	while(!strcmp(resp_ok, "OK"))
+	while(i < sizeof(gsm.imei))
 	{
 		temp = UART_getc();
 		if(temp != -1)
 		{
-			resp[i++] = temp;
-			resp_ok[0] = resp_ok[1];
-			resp_ok[1] = temp;
+			gsm.imei[i++] = temp;
 		}
 		time_stop = HAL_GetTick();
-		if((time_stop - time_start) > WAIT_TIMEOUT) return 1;
+		if((time_stop - time_start) > WAIT_TIMEOUT) return GSM_TIMEOUT;
 	}
-	return 0;
+	return GSM_WaitResp();
 }
 
 /**
 */
-int GSM_GetRSSI(char* rssi)
+int GSM_GetRSSI(UART_HandleTypeDef *gsm_uart)
 {
+//	char string[20];
 	char resp_ok[2];
 	uint32_t time_start, time_stop;
 	int temp;
-	int i = 0;
+//	int i = 0;
 	
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+CSQ", sizeof("AT+CSQ"), 1000);
 	time_start = HAL_GetTick();
+	
 	
 	while(!strcmp(resp_ok, "OK"))
 	{
 		temp = UART_getc();
 		if(temp != -1)
 		{
-			resp[i++] = temp;
+			//string[i++] = temp;
 			resp_ok[0] = resp_ok[1];
 			resp_ok[1] = temp;
 		}
@@ -162,7 +163,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+CMEE=2", sizeof("AT+CMEE=2"), 1000);
 	GSM_WaitResp();
 	HAL_UART_Transmit(user_uart, (uint8_t*)"RSSI:", sizeof("RSSI:"), 1000);
-	GSM_GetRSSI(gsm.rssi);
+	GSM_GetRSSI(gsm_uart);
 	HAL_UART_Transmit(user_uart, (uint8_t*)gsm.rssi, sizeof(gsm.rssi), 1000);
 
 	HAL_Delay(2000);
@@ -185,7 +186,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	}
 	//IMEI
 	memset(gsm.imei,0,sizeof(gsm.imei));
-	GSM_GetIMEI();
+	GSM_GetIMEI(gsm_uart);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
 	HAL_Delay(5000);
 	
@@ -193,6 +194,8 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
+	static int FAILURES;
+	char* http_get;
 //	  Watchdog.reset();
 //    sensors.requestTemperatures();
 //     float   Temp=sensors.getTempCByIndex(0);
@@ -201,54 +204,37 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //       Electricity=isElectricityOn();
 //        Watchdog.reset();
 //   Watchdog.reset();
-//  if(FAILURES==MAX_FAILURES) 
-//        {
-//          FAILURES=0;
-//          fona.enableGPRS(false);
-//          resetFunc(); 
-//        }
-//         Watchdog.reset();
-//  fona.HTTP_init();
-//   Watchdog.reset();
-//  fona.HTTP_para(F("CID"),"1");
-//     Watchdog.reset();
-//  fona.HTTP_para_start(F("URL"));
-//  Watchdog.reset();
-//  fona.print(F("http://minachevamir.myjino.ru/rest/add.php?imei="));
-//  Serial.print(F("http://minachevamir.myjino.ru/rest/add.php?imei="));
-//  Watchdog.reset();
-//  fona.print(IMEI);
-//  Serial.print(IMEI);
-//  Watchdog.reset();
-//  fona.print(F("&ts=-50")); 
-//   Serial.print(F("&ts=-50"));
-//  fona.print(F("&tr="));
-//  Serial.print(F("&tr="));
-//  fona.print(Temp);
-//  Serial.print(Temp);
-//  fona.print(F("&st=-25"));
-//  Serial.print(F("&st=-25"));
-//  Watchdog.reset();  
-//  fona.print(F("&el="));
-//  Serial.print(F("&el="));
-//  fona.print(Electricity);
-//  Serial.print(Electricity);
-//  fona.print(F("&dt="));
-//  Serial.print(F("&dt="));
-//  fona.print(Defrost);
-//  Serial.print(Defrost);
-//  fona.print(F("&door="));
-//  Serial.print(F("&door="));
-//  fona.print(Door);
-//  Serial.print(Door);
-//  Watchdog.reset();
-// 
-// // Serial.println(F("&tempsupply=-18.4&tempreturn=-17.0&setpoint=-18.0&electricity=1&defrost=0&door=1"));
+  if(FAILURES==MAX_FAILURES) 
+	{
+		FAILURES=0;
+//		fona.enableGPRS(false);
+//		resetFunc(); 
+	}
+	
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+HTTPINIT", sizeof("AT+HTTPINIT"), 1000);
+	GSM_WaitResp();
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+HTTPPARA=\"CID\",1", sizeof("AT+HTTPPARA=\"CID\",1"), 1000);
+	GSM_WaitResp();
+	
+	http_get = malloc(sizeof(URL) + sizeof("&ts=-50") + sizeof("&tr=") + sizeof("Temp") + sizeof("&st=-25") + sizeof("&el=") + sizeof("Electricity") + sizeof("&dt=") + sizeof("Defrost") + sizeof("&door=") + sizeof("Door"));
+		if(http_get == NULL) return;
+		strcat(http_get, URL);
+		strcat(http_get, "&ts=-50");
+		strcat(http_get, "&tr=");
+		strcat(http_get, "&st=-25");
+		strcat(http_get, "&el=");
+		strcat(http_get, "Electricity");
+		strcat(http_get, "&dt=");
+		strcat(http_get, "Defrost");
+		strcat(http_get, "&door=");
+		strcat(http_get, "Door");
+		HAL_UART_Transmit(gsm_uart, (uint8_t*)http_get, sizeof(http_get), 1000);
+		GSM_WaitResp();
+		HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(http_get), 1000);
+	free(http_get);
 
-//  fona.HTTP_para_end();
-//  Watchdog.reset();
-//        
-//// fona.HTTP_para(F("URL"),"http://minachevamir.myjino.ru/rest/add.php?imei=1");
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+HTTPACTION=0", sizeof("AT+HTTPACTION=0"), 1000);
+	GSM_WaitResp();
 
 //  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)
 //  {
@@ -259,7 +245,9 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //  else
 //  { Serial.println(F("Sucessfully send!"));}
 // Watchdog.reset();
-//   fona.HTTP_term();
-//      Watchdog.reset();
-//   delay(500);
+	
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+HTTPTERM", sizeof("AT+HTTPTERM"), 1000);
+	GSM_WaitResp();
+
+	HAL_Delay(500);
 }

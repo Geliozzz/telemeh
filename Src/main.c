@@ -86,6 +86,7 @@ int main(void)
   MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
+	UART_Init(&huart1);
 	GSM_Init(&huart1, &huart2);
   /* USER CODE END 2 */
 
