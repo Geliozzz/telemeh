@@ -24,7 +24,7 @@ int GSM_WaitResp(void)
 	
 	time_start = HAL_GetTick();
 	
-	while(!strcmp(resp_ok, "OK"))
+	while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
 	{
 		temp = UART_getc();
 		if(temp != -1)
@@ -102,7 +102,7 @@ int GSM_GetNetworkStatus(void)
 	
 	time_start = HAL_GetTick();
 	
-	while(!strcmp(resp_ok, "OK"))
+	while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
 	{
 		temp = UART_getc();
 		if(temp != -1)
@@ -127,30 +127,32 @@ int IsEnableGPRS(void)
 
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
+	int i;
 	// Enable SIM900
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-	HAL_Delay(2000);
+//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+//	HAL_Delay(1000);
+//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+//	HAL_Delay(2000);
 	
 	// Wait enable module
 	
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!", sizeof("Polus-IO test!"), 1000);
 	//
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT", sizeof("AT"), 1000);
-	GSM_WaitResp();
-	
-	HAL_Delay(2000);
+	for(i = 0; i < 5; i++)
+	{
+		HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT\r", sizeof("AT\r"), 1000);
+		GSM_WaitResp();
+	}
 	//
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"", sizeof("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r", sizeof("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r"), 1000);
 	GSM_WaitResp();
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"APN\",\"internet.mts.ru\"", sizeof("AT+SAPBR=3,1,\"APN\",\"internet.mts.ru\""), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"APN\",\"internet.mts.ru\"\r", sizeof("AT+SAPBR=3,1,\"APN\",\"internet.mts.ru\"\r"), 1000);
 	GSM_WaitResp();
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"USER\",\"mts\"", sizeof("AT+SAPBR=3,1,\"USER\",\"mts\""), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"USER\",\"mts\"\r", sizeof("AT+SAPBR=3,1,\"USER\",\"mts\"\r"), 1000);
 	GSM_WaitResp();
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"PWD\",\"mts\"", sizeof("AT+SAPBR=3,1,\"PWD\",\"mts\""), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"PWD\",\"mts\"\r", sizeof("AT+SAPBR=3,1,\"PWD\",\"mts\"\r"), 1000);
 	GSM_WaitResp();
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=1,1", sizeof("AT+SAPBR=1,1"), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=1,1\r", sizeof("AT+SAPBR=1,1\r"), 1000);
 	GSM_WaitResp();
 	
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Checking for network...", sizeof("Checking for network..."), 1000);
@@ -160,7 +162,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
     HAL_Delay(500);  
   }
 
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+CMEE=2", sizeof("AT+CMEE=2"), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+CMEE=2\r", sizeof("AT+CMEE=2\r"), 1000);
 	GSM_WaitResp();
 	HAL_UART_Transmit(user_uart, (uint8_t*)"RSSI:", sizeof("RSSI:"), 1000);
 	GSM_GetRSSI(gsm_uart);
@@ -170,13 +172,13 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Disabling GPRS", sizeof("Disabling GPRS"), 1000);
 
 	//Disable the GPRS
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR =0,1", sizeof("AT+SAPBR =0,1"), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR =0,1\r", sizeof("AT+SAPBR =0,1\r"), 1000);
 	GSM_WaitResp();
 
 	HAL_Delay(5000);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Enabling GPRS", sizeof("Enabling GPRS"), 1000);
 	//Enable the GPRS
-	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR =1,1", sizeof("AT+SAPBR =1,1"), 1000);
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR =1,1\r", sizeof("AT+SAPBR =1,1\r"), 1000);
 	GSM_WaitResp();
 
 	while(!IsEnableGPRS())
