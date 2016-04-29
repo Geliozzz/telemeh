@@ -9,12 +9,23 @@
 #include "gsm.h"
 
 #define WAIT_TIMEOUT 1000
-#define URL "http://minachevamir.myjino.ru/rest/add.php?imei="
+#define URL "\"http://minachevamir.myjino.ru/rest/add.php?imei=\""
 
 #define MAX_FAILURES 3
 
 GSMTypeDef gsm;
 char resp[50];
+
+int strequal(char* str1, char* str2, int len)
+{
+	while(len--)
+	{
+		if(*str1 != *str2) return 1;
+		str1++;
+		str2++;
+	}
+	return 0;
+}
 
 int GSM_WaitResp(void)
 {
@@ -24,7 +35,8 @@ int GSM_WaitResp(void)
 	
 	time_start = HAL_GetTick();
 	
-	while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
+	//while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
+	while(strequal(resp_ok, "OK", sizeof("OK")))
 	{
 		temp = UART_getc();
 		if(temp != -1)
@@ -125,6 +137,36 @@ int IsEnableGPRS(void)
 	return 0;
 }
 
+void GSM_FailHandler(int fail)
+{
+	return;
+}
+
+int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, char str[], int type)
+{
+	HAL_UART_Transmit(gsm_uart, (uint8_t*)str, sizeof(str[]), 1000);
+	switch (type)
+	{
+		case RESP_OK:
+		{
+			GSM_FailHandler(GSM_WaitResp());
+		}
+		break;
+		case RESP_IMEI:
+		{
+			
+		}
+		break;
+		
+		default:
+		{
+			
+		}
+	}
+	GSM_WaitResp();
+	return 0;
+}
+
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
 	int i;
@@ -136,12 +178,11 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	
 	// Wait enable module
 	
-	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!", sizeof("Polus-IO test!"), 1000);
+	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!\n", sizeof("Polus-IO test!\n"), 1000);
 	//
 	for(i = 0; i < 5; i++)
 	{
-		HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT\r", sizeof("AT\r"), 1000);
-		GSM_WaitResp();
+		GSM_SendCmd(gsm_uart, "AT\r", RESP_OK);
 	}
 	//
 	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r", sizeof("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r"), 1000);
@@ -196,7 +237,6 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
-	static int FAILURES;
 	char* http_get;
 //	  Watchdog.reset();
 //    sensors.requestTemperatures();
@@ -206,9 +246,9 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //       Electricity=isElectricityOn();
 //        Watchdog.reset();
 //   Watchdog.reset();
-  if(FAILURES==MAX_FAILURES) 
+  if(gsm.failtures >= MAX_FAILURES) 
 	{
-		FAILURES=0;
+		gsm.failtures = 0;
 //		fona.enableGPRS(false);
 //		resetFunc(); 
 	}
@@ -218,8 +258,9 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_UART_Transmit(gsm_uart, (uint8_t*)"AT+HTTPPARA=\"CID\",1", sizeof("AT+HTTPPARA=\"CID\",1"), 1000);
 	GSM_WaitResp();
 	
-	http_get = malloc(sizeof(URL) + sizeof("&ts=-50") + sizeof("&tr=") + sizeof("Temp") + sizeof("&st=-25") + sizeof("&el=") + sizeof("Electricity") + sizeof("&dt=") + sizeof("Defrost") + sizeof("&door=") + sizeof("Door"));
+	http_get = malloc(sizeof("\"AT+HTTPPARA=\"URL\",") + sizeof(URL) + sizeof("&ts=-50") + sizeof("&tr=") + sizeof("Temp") + sizeof("&st=-25") + sizeof("&el=") + sizeof("Electricity") + sizeof("&dt=") + sizeof("Defrost") + sizeof("&door=") + sizeof("Door\r"));
 		if(http_get == NULL) return;
+		strcat(http_get, "\"AT+HTTPPARA=\"URL\",");
 		strcat(http_get, URL);
 		strcat(http_get, "&ts=-50");
 		strcat(http_get, "&tr=");
@@ -229,7 +270,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		strcat(http_get, "&dt=");
 		strcat(http_get, "Defrost");
 		strcat(http_get, "&door=");
-		strcat(http_get, "Door");
+		strcat(http_get, "Door\r");
 		HAL_UART_Transmit(gsm_uart, (uint8_t*)http_get, sizeof(http_get), 1000);
 		GSM_WaitResp();
 		HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(http_get), 1000);

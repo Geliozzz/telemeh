@@ -12,7 +12,7 @@
 #include "uart.h"
 #include "string.h"
 #include "stdlib.h"
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 
 /** 
   */ 
@@ -20,12 +20,19 @@ typedef struct
 {
   char imei[15];
 	char rssi[5];
+	int failtures;
 }GSMTypeDef;
 
 enum
 {
 	GSM_OK = 0,
 	GSM_TIMEOUT
+};
+
+enum
+{
+	RESP_OK = 0,
+	RESP_IMEI
 };
 
 // Инициализация GSM
