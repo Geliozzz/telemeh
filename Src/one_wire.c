@@ -40,12 +40,15 @@ static unsigned char crc_table[] = {
 
 
 static void one_wire_delay_us(unsigned int time) {
+//	__HAL_TIM_SET_COUNTER(, 0);
+	TIM6->CNT = 0;
 	timer->CNT = 0;
 	time -= 3;
 	while (timer->CNT <= time) {}
 }
 
-void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_TypeDef *t) {
+void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_TypeDef *t) 
+{
 	gpio = g;
 	pin = p;
 	timer = t;
