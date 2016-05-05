@@ -4,6 +4,8 @@
 "telemeh\stm32f1xx_hal_msp.o"
 "telemeh\uart.o"
 "telemeh\gsm.o"
+"telemeh\one_wire.o"
+"telemeh\ds18b20.o"
 "telemeh\startup_stm32f100xb.o"
 "telemeh\system_stm32f1xx.o"
 "telemeh\stm32f1xx_hal_gpio.o"

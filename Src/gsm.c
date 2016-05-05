@@ -18,6 +18,7 @@ char resp[50];
 
 int strequal(char* str1, char* str2, int len)
 {
+	strlen(str2);
 	while(len--)
 	{
 		if(*str1 != *str2) return 1;
