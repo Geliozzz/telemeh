@@ -12,7 +12,7 @@
 #include "uart.h"
 #include "string.h"
 #include "stdlib.h"
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 /** 
   */ 
@@ -32,7 +32,9 @@ enum
 enum
 {
 	RESP_OK = 0,
-	RESP_IMEI
+	RESP_IMEI,
+	RESP_RSSI,
+	RESP_HTTPACTION
 };
 
 // Инициализация GSM
