@@ -4,6 +4,7 @@
 #include "math.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include "stm32f1xx_hal.h"
 
 // Structure in which temperature is stored
 typedef struct {
@@ -18,7 +19,7 @@ typedef struct {
     one_wire_device *devices;
 } ds18b20_devices;
 
-void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_TypeDef *timer);
+void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_HandleTypeDef *timer);
 void ds18b20_set_precission(uint8_t precission);
 ds18b20_devices ds18b20_get_devices(bool scan);
 

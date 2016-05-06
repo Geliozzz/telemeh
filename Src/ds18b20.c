@@ -4,7 +4,7 @@ uint8_t precission = 3;
 one_wire_device *one_wire_list_of_devices;
 uint8_t one_wire_devices_list_size = 2;
 
-void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_TypeDef *timer) {
+void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_HandleTypeDef *timer) {
 	one_wire_init(gpio, port, timer);
 	one_wire_list_of_devices = one_wire_search_rom(&one_wire_devices_list_size);
 }

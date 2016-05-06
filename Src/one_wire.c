@@ -1,15 +1,15 @@
 #include "one_wire.h"
 
-#define __SET_BIT	 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-#define __RESET_BIT	 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
-#define __READ_BIT		HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1);
-
 static one_wire_device one_wire_devices[10];
 uint8_t one_wire_device_count = 0;
 
 GPIO_TypeDef *gpio;
 uint16_t pin;
-TIM_TypeDef *timer;
+TIM_HandleTypeDef *timer;
+
+#define __SET_BIT	 		HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_SET);
+#define __RESET_BIT	 	HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_RESET);
+#define __READ_BIT		HAL_GPIO_ReadPin(gpio, pin);
 
 one_wire_state state;
 
@@ -40,14 +40,12 @@ static unsigned char crc_table[] = {
 
 
 static void one_wire_delay_us(unsigned int time) {
-//	__HAL_TIM_SET_COUNTER(, 0);
-	TIM6->CNT = 0;
-	timer->CNT = 0;
+	__HAL_TIM_SET_COUNTER(timer, 0);
 	time -= 3;
-	while (timer->CNT <= time) {}
+	while (__HAL_TIM_GET_COUNTER(timer) <= time) {}
 }
 
-void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_TypeDef *t) 
+void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_HandleTypeDef *t) 
 {
 	gpio = g;
 	pin = p;
@@ -55,28 +53,28 @@ void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_TypeDef *t)
 	state = ONE_WIRE_ERROR;
 
 	// Use PC6 as bus master
-	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_OD;
-	GPIO_InitStructure.Pin = pin;
-	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
-	HAL_GPIO_Init(gpio, &GPIO_InitStructure);
+//	GPIO_InitTypeDef GPIO_InitStructure;
+//	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_OD;
+//	GPIO_InitStructure.Pin = pin;
+//	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
+//	HAL_GPIO_Init(gpio, &GPIO_InitStructure);
 
 
-	// Setup clock
-	if (timer == TIM2);
-	//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-	else
-		while(1){} // not implemented
+//	// Setup clock
+//	if (timer->Instance == TIM6);
+//	//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+//	else
+//		while(1){} // not implemented
 
-//	TIM_TimeBaseInitTypeDef TIM_InitStructure;
-//	TIM_InitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-//	TIM_InitStructure.TIM_Prescaler = 24 - 1;
-//	TIM_InitStructure.TIM_Period = 10000 - 1; // Update event every 10000 us / 10 ms
-//	TIM_InitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-//	TIM_InitStructure.TIM_RepetitionCounter = 0;
-//	TIM_TimeBaseInit(timer, &TIM_InitStructure);
-////	TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
-//	TIM_Cmd(timer, ENABLE);
+////	TIM_TimeBaseInitTypeDef TIM_InitStructure;
+////	TIM_InitStructure.TIM_CounterMode = TIM_CounterMode_Up;
+////	TIM_InitStructure.TIM_Prescaler = 24 - 1;
+////	TIM_InitStructure.TIM_Period = 10000 - 1; // Update event every 10000 us / 10 ms
+////	TIM_InitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+////	TIM_InitStructure.TIM_RepetitionCounter = 0;
+////	TIM_TimeBaseInit(timer, &TIM_InitStructure);
+//////	TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
+////	TIM_Cmd(timer, ENABLE);
 }
 
 bool one_wire_reset_pulse() 
@@ -111,8 +109,10 @@ bool one_wire_reset_pulse()
 void one_wire_write_1() {
 	// Pull bus down for 15 us
 //	GPIO_ResetBits(gpio, pin);
-//	one_wire_delay_us(15);
+	__RESET_BIT
+		one_wire_delay_us(15);
 //	GPIO_SetBits(gpio, pin);
+	__SET_BIT
 
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(50);
@@ -121,9 +121,10 @@ void one_wire_write_1() {
 void one_wire_write_0() {
 	// Pull bus down for 60 us
 //	GPIO_ResetBits(gpio, pin);
+	__RESET_BIT
 	one_wire_delay_us(60);
 //	GPIO_SetBits(gpio, pin);
-
+	__SET_BIT
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(5);
 }
@@ -140,12 +141,11 @@ void one_wire_write_bit(bool bit)
 
 bool one_wire_read_bit()
 {
-	GPIO_PinState bit; 
+	static GPIO_PinState bit; 
 	// Pull bus down for 5 us
 __RESET_BIT
 	one_wire_delay_us(5);
 __SET_BIT
-
 	// Wait 5 us and check bus state
 	one_wire_delay_us(5);
 
@@ -154,7 +154,8 @@ __SET_BIT
 	bit = __READ_BIT
 	
 //	GPIO_WriteBit(GPIOC, GPIO_Pin_9, bit);
-	__SET_BIT
+	if(bit) __SET_BIT
+		else __RESET_BIT
 	
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(55);

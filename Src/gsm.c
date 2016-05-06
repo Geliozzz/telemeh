@@ -301,7 +301,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 	GSM_SendCmd(gsm_uart, "AT+HTTPACTION=0\r", RESP_OK);
 
-	HAL_Delay(3000);
+	HAL_Delay(4000);
 
 //  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)
 //  {

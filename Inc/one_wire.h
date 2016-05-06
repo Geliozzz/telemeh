@@ -14,7 +14,7 @@ typedef struct {
 	uint8_t address[8];
 } one_wire_device;
 
-void one_wire_init(GPIO_TypeDef *gpio, uint16_t port, TIM_TypeDef *timer);
+void one_wire_init(GPIO_TypeDef *gpio, uint16_t port, TIM_HandleTypeDef *timer);
 bool one_wire_reset_pulse(void);
 void one_wire_write_1(void);
 void one_wire_write_0(void);

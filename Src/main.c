@@ -93,7 +93,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	UART_Init(&huart1);
 	GSM_Init(&huart1, &huart2);
-	//ds18b20_init();
+	ds18b20_init(GPIOA, GPIO_PIN_0, &htim6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
