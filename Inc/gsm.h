@@ -12,7 +12,7 @@
 #include "uart.h"
 #include "string.h"
 #include "stdlib.h"
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 /** 
   */ 
@@ -41,6 +41,6 @@ enum
 //------------------
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, float temp1);
 
 #endif

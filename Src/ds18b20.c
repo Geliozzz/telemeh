@@ -108,20 +108,17 @@ simple_float ds18b20_decode_temperature(void) {
     f.fractional = rest;
     f.is_valid = true;
 
-    char buffer[10];
-    sprintf(buffer, "%d.%d\r", (int)temp, rest);
- //   usart2_print(buffer);
     return f;
 }
 
 void ds18b20_wait_for_conversion(void) {
-//	if (precission == 0) {
-//		delay(95);
-//	} else if (precission == 1) {
-//		delay(190);
-//	} else if (precission == 2) {
-//		delay(380);
-//	} else if (precission == 3) {
-//		delay(750);
-//	}
+	if (precission == 0) {
+		HAL_Delay(95);
+	} else if (precission == 1) {
+		HAL_Delay(190);
+	} else if (precission == 2) {
+		HAL_Delay(380);
+	} else if (precission == 3) {
+		HAL_Delay(750);
+	}
 }

@@ -4,7 +4,6 @@
 #include "math.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include "stm32f1xx_hal.h"
 
 // Structure in which temperature is stored
 typedef struct {

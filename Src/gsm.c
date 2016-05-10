@@ -251,10 +251,11 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	
 }
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, float temp)
 {
 	char* http_get;
 	int size;
+	char temp_str[10];
 
 //	  Watchdog.reset();
 //    sensors.requestTemperatures();
@@ -277,7 +278,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
 	
 
-	size = sizeof("\"AT+HTTPPARA=\"URL\",") + sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=-50") + sizeof("&tr=") + sizeof("35") + sizeof("&st=-25")
+	size = sizeof("\"AT+HTTPPARA=\"URL\",") + sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=-50") + sizeof("&tr=") + 50 + sizeof("&st=-25")
 										+ sizeof("&el=") + sizeof("20") + sizeof("&dt=") 
 										+ sizeof("1") + sizeof("&door=") + sizeof("0\"\r");
 	http_get = malloc(size);
@@ -287,7 +288,8 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		strcat(http_get, gsm.imei);
 		strcat(http_get, "&ts=-50");
 		strcat(http_get, "&tr=");
-		strcat(http_get, "35");
+		sprintf(temp_str, "%f", temp);
+		strcat(http_get, temp_str);
 		strcat(http_get, "&st=-25");
 		strcat(http_get, "&el=");
 		strcat(http_get, "20");
@@ -301,7 +303,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 	GSM_SendCmd(gsm_uart, "AT+HTTPACTION=0\r", RESP_OK);
 
-	HAL_Delay(4000);
+	HAL_Delay(3000);
 
 //  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)
 //  {

@@ -1,15 +1,15 @@
 #include "one_wire.h"
 
+#define __SET_BIT	 		HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_SET);
+#define __RESET_BIT	 	HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_RESET);
+#define __READ_BIT		HAL_GPIO_ReadPin(gpio, pin);
+
 static one_wire_device one_wire_devices[10];
 uint8_t one_wire_device_count = 0;
 
 GPIO_TypeDef *gpio;
 uint16_t pin;
 TIM_HandleTypeDef *timer;
-
-#define __SET_BIT	 		HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_SET);
-#define __RESET_BIT	 	HAL_GPIO_WritePin(gpio, pin, GPIO_PIN_RESET);
-#define __READ_BIT		HAL_GPIO_ReadPin(gpio, pin);
 
 one_wire_state state;
 
@@ -51,36 +51,14 @@ void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_HandleTypeDef *t)
 	pin = p;
 	timer = t;
 	state = ONE_WIRE_ERROR;
-
-	// Use PC6 as bus master
-//	GPIO_InitTypeDef GPIO_InitStructure;
-//	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_OD;
-//	GPIO_InitStructure.Pin = pin;
-//	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
-//	HAL_GPIO_Init(gpio, &GPIO_InitStructure);
-
-
-//	// Setup clock
-//	if (timer->Instance == TIM6);
-//	//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-//	else
-//		while(1){} // not implemented
-
-////	TIM_TimeBaseInitTypeDef TIM_InitStructure;
-////	TIM_InitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-////	TIM_InitStructure.TIM_Prescaler = 24 - 1;
-////	TIM_InitStructure.TIM_Period = 10000 - 1; // Update event every 10000 us / 10 ms
-////	TIM_InitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-////	TIM_InitStructure.TIM_RepetitionCounter = 0;
-////	TIM_TimeBaseInit(timer, &TIM_InitStructure);
-//////	TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
-////	TIM_Cmd(timer, ENABLE);
 }
 
 bool one_wire_reset_pulse() 
 {
 	GPIO_PinState bit;
 	// Pull bus down for 500 us (min. 480 us)
+	__SET_BIT
+	one_wire_delay_us(50);
 	__RESET_BIT
 	one_wire_delay_us(500);
 	__SET_BIT
@@ -91,8 +69,6 @@ bool one_wire_reset_pulse()
 
 	bit = __READ_BIT
 	if (bit == GPIO_PIN_RESET) {
-//		GPIO_SetBits(GPIOC, GPIO_Pin_9);
-//		GPIO_ResetBits(GPIOC, GPIO_Pin_9);
 		__SET_BIT
 		__RESET_BIT
 		state = ONE_WIRE_SLAVE_PRESENT;
@@ -108,22 +84,23 @@ bool one_wire_reset_pulse()
 
 void one_wire_write_1() {
 	// Pull bus down for 15 us
+	__SET_BIT
+	one_wire_delay_us(5);
 //	GPIO_ResetBits(gpio, pin);
 	__RESET_BIT
-		one_wire_delay_us(15);
-//	GPIO_SetBits(gpio, pin);
+	one_wire_delay_us(15);
 	__SET_BIT
-
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(50);
 }
 
 void one_wire_write_0() {
+	
+	__SET_BIT
+	one_wire_delay_us(5);
 	// Pull bus down for 60 us
-//	GPIO_ResetBits(gpio, pin);
 	__RESET_BIT
 	one_wire_delay_us(60);
-//	GPIO_SetBits(gpio, pin);
 	__SET_BIT
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(5);
@@ -141,25 +118,22 @@ void one_wire_write_bit(bool bit)
 
 bool one_wire_read_bit()
 {
-	static GPIO_PinState bit; 
+	GPIO_PinState bit; 
+	
+	__SET_BIT
+		one_wire_delay_us(5);
 	// Pull bus down for 5 us
-__RESET_BIT
-	one_wire_delay_us(5);
-__SET_BIT
-	// Wait 5 us and check bus state
-	one_wire_delay_us(5);
+	__RESET_BIT
+		one_wire_delay_us(10);
+	__SET_BIT
 
-//	static BitAction bit;
-//	bit = GPIO_ReadInputDataBit(gpio, pin);
+	// Wait 10 us and check bus state
+	one_wire_delay_us(10);
+
 	bit = __READ_BIT
-	
-//	GPIO_WriteBit(GPIOC, GPIO_Pin_9, bit);
-	if(bit) __SET_BIT
-		else __RESET_BIT
-	
 	// Wait until end of timeslot (60 us) + 5 us for recovery
 	one_wire_delay_us(55);
-
+	
 	if (bit == GPIO_PIN_SET) {
 		return true;
 	} else {
@@ -214,8 +188,6 @@ void one_wire_read_rom() {
 	one_wire_read_byte();
 	one_wire_read_byte();
 }
-
-
 
 int one_wire_search()
 {
@@ -342,23 +314,14 @@ int one_wire_next()
 
 one_wire_device* one_wire_search_rom(uint8_t *devices) {
 	int result, i;
-	int count = 0;
 	result = one_wire_first();
 	while (result)
 	{
 		one_wire_device device;
-		// print device found - CRC, ID, Family
-		for (i = 7; i >= 0; i--) {
-			printf("%02X", ROM_NO[i]);
-		}
-
 		for (i = 0; i < 8; ++i) {
 			device.address[i] = ROM_NO[i];
 		}
-
 		one_wire_devices[one_wire_device_count++] = device;
-
-		printf(" %d\r\n", ++count);
 		result = one_wire_next();
 	}
 	*devices = one_wire_device_count;
