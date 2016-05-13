@@ -15,10 +15,15 @@
 
 GSMTypeDef gsm;
 char resp[50];
+const char *settingsForInternet[] = {"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r", 
+								"AT+SAPBR=3,1,\"APN\",\"internet.beeline.ru\"\r",
+								"AT+SAPBR=3,1,\"USER\",\"beeline\"\r",
+								"AT+SAPBR=3,1,\"PWD\",\"beeline\"\r"};
 
-int strequal(char* str1, char* str2, int len)
+int strequal(const char* str1,const char* str2)
 {
-	strlen(str2);
+	int len;
+	len = strlen(str2);
 	while(len--)
 	{
 		if(*str1 != *str2) return 1;
@@ -31,19 +36,30 @@ int strequal(char* str1, char* str2, int len)
 int GSM_WaitResp(void)
 {
 	char resp_ok[2];
+	char resp_error[5];
+	int i;
 	uint32_t time_start, time_stop;
 	int temp;
 	
 	time_start = HAL_GetTick();
 	
 	//while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
-	while(strequal(resp_ok, "OK", sizeof("OK")) )
+	while(strequal(resp_ok, "OK"))
 	{
 		temp = UART_getc();
 		if(temp != -1)
 		{
 			resp_ok[0] = resp_ok[1];
 			resp_ok[1] = temp;
+			for(i = 0; i < 5; i++)
+			{
+				resp_error[i] = resp_error[i + 1];
+			}
+			resp_error[4] = temp;
+			if(!strequal(resp_error, "ERROR"))
+			{
+				return GSM_ERROR;
+			}
 		}
 		time_stop = HAL_GetTick();
 		if((time_stop - time_start) > WAIT_TIMEOUT) return GSM_TIMEOUT;
@@ -62,7 +78,7 @@ int GSM_GetIMEI()
 	char resp_imei[30];
 	
 	time_start = HAL_GetTick();
-	while(strequal(resp_ok, "OK", sizeof("OK")) )
+	while(strequal(resp_ok, "OK\r" ))
 	{
 		temp = UART_getc();
 		if(temp != -1)
@@ -142,6 +158,57 @@ int GSM_GetNetworkStatus(void)
 	return 0;
 }
 
+int GSM_GetAction(void)
+{
+	char resp_action[23];
+	char resp_ok[2];
+	int i,j;
+	uint32_t time_start, time_stop;
+	int temp;
+	
+	time_start = HAL_GetTick();
+	
+	while(strequal(resp_ok, "OK" ))
+	{
+		temp = UART_getc();
+		if(temp != -1)
+		{
+			resp_ok[0] = resp_ok[1];
+			resp_ok[1] = temp;
+		}
+		time_stop = HAL_GetTick();
+		if((time_stop - time_start) > WAIT_TIMEOUT)
+			return GSM_TIMEOUT;
+	}
+	HAL_Delay(2000);
+	time_start = HAL_GetTick();
+	i = 0;
+	while(strequal(resp_action, "+HTTP" ))
+	{
+		temp = UART_getc();
+		if(temp != -1)
+		{
+			for(i = 0; i < 23; i++)
+			{
+				resp_action[i] = resp_action[i + 1];
+			}
+			
+			resp_action[22] = temp;
+		}
+		time_stop = HAL_GetTick();
+		if((time_stop - time_start) > WAIT_TIMEOUT)
+			return GSM_TIMEOUT;
+	}
+	for(i = 0; i < 30; i++)
+	{
+		if(resp_action[i] >= 0x30 && resp_action[i] <= 0x39)
+		{
+			gsm.action[j++] = resp_action[i];
+		}
+	}
+	return GSM_OK;
+}
+
 int IsEnableGPRS(void)
 {
 	//AT+SAPBR=2,1
@@ -152,6 +219,7 @@ int IsEnableGPRS(void)
 
 void GSM_FailHandler(int fail)
 {
+	if (fail != GSM_OK) gsm.failtures++;
 	return;
 }
 
@@ -167,7 +235,7 @@ int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, const char* str, int type)
 		break;
 		case RESP_IMEI:
 		{
-			GSM_GetIMEI();
+			GSM_FailHandler(GSM_GetIMEI());
 		}
 		break;
 		case RESP_RSSI:
@@ -175,7 +243,11 @@ int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, const char* str, int type)
 			GSM_GetRSSI();
 		}
 		break;
-		
+		case RESP_HTTPACTION:
+		{
+			GSM_FailHandler(GSM_GetAction());
+		}
+		break;
 		default:
 		{
 			
@@ -184,6 +256,17 @@ int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, const char* str, int type)
 	GSM_WaitResp();
 	return 0;
 }
+
+int isDoorOpen(void)
+{
+	return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9);
+}
+
+int isDefrostOn(void)
+{
+	return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
+}
+
 
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
@@ -203,10 +286,10 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		GSM_SendCmd(gsm_uart, "AT\r", RESP_OK);
 	}
 	//
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r", RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=3,1,\"APN\",\"internet.beeline.ru\"\r", RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=3,1,\"USER\",\"beeline\"\r", RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=3,1,\"PWD\",\"beeline\"\r", RESP_OK);
+	GSM_SendCmd(gsm_uart, settingsForInternet[0], RESP_OK);
+	GSM_SendCmd(gsm_uart, settingsForInternet[1], RESP_OK);
+	GSM_SendCmd(gsm_uart, settingsForInternet[2], RESP_OK);
+	GSM_SendCmd(gsm_uart, settingsForInternet[3], RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+SAPBR=1,1\r", RESP_OK);
 
 
@@ -248,31 +331,37 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
 	HAL_Delay(5000);
-	
+//	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
+//	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
 }
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, float temp)
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
 	char* http_get;
 	int size;
-	char temp_str[10];
+	char temp1_str[10];
+	char temp2_str[10];
+//	char  Door, Defrost;
+	simple_float temp;
 
 //	  Watchdog.reset();
-//    sensors.requestTemperatures();
-//     float   Temp=sensors.getTempCByIndex(0);
-//       Door=isDoorOpen();
-//       Defrost=isDefrostOn();
+	temp = ds18b20_GetTemp1();
+	sprintf(temp1_str, "%d.%d2", temp.integer, temp.fractional);
+	temp = ds18b20_GetTemp2();
+	sprintf(temp2_str, "%d.%d2", temp.integer, temp.fractional);
+
+	
+//  Defrost=isDefrostOn();
 //       Electricity=isElectricityOn();
 //        Watchdog.reset();
 //   Watchdog.reset();
   if(gsm.failtures >= MAX_FAILURES) 
 	{
-		gsm.failtures = 0;
+	//	gsm.failtures = 0;
 //		fona.enableGPRS(false);
 //		resetFunc(); 
 	}
 	
-	GSM_SendCmd(gsm_uart, "\r", RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+SAPBR=2,1\r", RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
@@ -288,8 +377,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, floa
 		strcat(http_get, gsm.imei);
 		strcat(http_get, "&ts=-50");
 		strcat(http_get, "&tr=");
-		sprintf(temp_str, "%f", temp);
-		strcat(http_get, temp_str);
+		strcat(http_get, temp1_str);
 		strcat(http_get, "&st=-25");
 		strcat(http_get, "&el=");
 		strcat(http_get, "20");
@@ -301,8 +389,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, floa
 		HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(*http_get), 1000);
 	free(http_get);
 
-	GSM_SendCmd(gsm_uart, "AT+HTTPACTION=0\r", RESP_OK);
-
+	GSM_SendCmd(gsm_uart, "AT+HTTPACTION=0\r", RESP_HTTPACTION);
 	HAL_Delay(3000);
 
 //  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)

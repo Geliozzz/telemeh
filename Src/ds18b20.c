@@ -4,8 +4,8 @@ uint8_t precission = 3;
 one_wire_device *one_wire_list_of_devices;
 uint8_t one_wire_devices_list_size = 2;
 
-void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_HandleTypeDef *timer) {
-	one_wire_init(gpio, port, timer);
+void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port) {
+	one_wire_init(gpio, port);
 	one_wire_list_of_devices = one_wire_search_rom(&one_wire_devices_list_size);
 }
 
@@ -121,4 +121,18 @@ void ds18b20_wait_for_conversion(void) {
 	} else if (precission == 3) {
 		HAL_Delay(750);
 	}
+}
+
+simple_float ds18b20_GetTemp1()
+{
+	ds18b20_init(GPIOD, GPIO_PIN_0);
+	ds18b20_convert_temperature_simple();
+	return ds18b20_read_temperature_simple();
+}
+
+simple_float ds18b20_GetTemp2()
+{
+	ds18b20_init(GPIOD, GPIO_PIN_0);
+	ds18b20_convert_temperature_simple();
+	return ds18b20_read_temperature_simple();
 }

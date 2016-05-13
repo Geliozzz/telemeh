@@ -18,7 +18,7 @@ typedef struct {
     one_wire_device *devices;
 } ds18b20_devices;
 
-void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port, TIM_HandleTypeDef *timer);
+void ds18b20_init(GPIO_TypeDef *gpio, uint16_t port);
 void ds18b20_set_precission(uint8_t precission);
 ds18b20_devices ds18b20_get_devices(bool scan);
 
@@ -30,5 +30,8 @@ simple_float* ds18b20_read_temperature_all(void);
 
 void ds18b20_wait_for_conversion(void);
 simple_float ds18b20_decode_temperature(void);
+
+extern simple_float ds18b20_GetTemp1(void);
+extern simple_float ds18b20_GetTemp2(void);
 
 #endif // __DS18B20_H__

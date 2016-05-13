@@ -13,6 +13,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "stm32f4xx_hal.h"
+#include "ds18b20.h"
 
 /** 
   */ 
@@ -20,13 +21,15 @@ typedef struct
 {
   char imei[15];
 	char rssi[5];
+	char action[20];
 	int failtures;
 }GSMTypeDef;
 
 enum
 {
 	GSM_OK = 0,
-	GSM_TIMEOUT
+	GSM_TIMEOUT,
+	GSM_ERROR
 };
 
 enum
@@ -41,6 +44,6 @@ enum
 //------------------
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, float temp1);
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
 
 #endif

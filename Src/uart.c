@@ -51,6 +51,10 @@ int UART_getc( void )
 	static int i = 0;
 
 	rx_buff_TAIL = ptr_huart->pRxBuffPtr;	
+	if(rx_buff_TAIL >= rx_buff + SIZE_RXBUFF)
+	{
+		HAL_UART_Receive_IT(ptr_huart, rx_buff, SIZE_RXBUFF);
+	}
 	if(rx_buff_HEAD != rx_buff_TAIL)
 	{
 		c = *rx_buff_HEAD;

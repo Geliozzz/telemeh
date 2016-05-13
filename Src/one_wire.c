@@ -45,13 +45,18 @@ static void one_wire_delay_us(unsigned int time) {
 	while (__HAL_TIM_GET_COUNTER(timer) <= time) {}
 }
 
-void one_wire_init(GPIO_TypeDef *g, uint16_t p, TIM_HandleTypeDef *t) 
+void one_wire_init(GPIO_TypeDef *g, uint16_t p) 
 {
 	gpio = g;
 	pin = p;
-	timer = t;
 	state = ONE_WIRE_ERROR;
 }
+
+void one_wire_init_timer(TIM_HandleTypeDef *t)
+{
+	timer = t;
+}
+
 
 bool one_wire_reset_pulse() 
 {
