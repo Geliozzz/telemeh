@@ -272,10 +272,10 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
 	int i;
 	// Enable SIM900
-//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-//	HAL_Delay(1000);
-//	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-//	HAL_Delay(2000);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+	HAL_Delay(2000);
 	
 	// Wait enable module
 	

@@ -12,7 +12,7 @@
 #include "uart.h"
 #include "string.h"
 #include "stdlib.h"
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 #include "ds18b20.h"
 
 /** 

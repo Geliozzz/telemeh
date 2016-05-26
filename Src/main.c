@@ -72,7 +72,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	simple_float temp_str;
+	float temp;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -93,17 +94,24 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	UART_Init(&huart1);
 	GSM_Init(&huart1, &huart2);
-	ds18b20_init(GPIOA, GPIO_PIN_0, &htim6);
+	ds18b20_init(GPIOA, GPIO_PIN_0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	ds18b20_init(GPIOD, GPIO_PIN_0);
+	ds18b20_convert_temperature_simple();
+	temp_str = ds18b20_read_temperature_simple();
+	temp = temp_str.integer + (float)temp_str.fractional / 1000;	
+	temp++;
+	Send2Site(&huart1, &huart2);
+		HAL_Delay(1000);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
+	
   }
   /* USER CODE END 3 */
 
@@ -114,20 +122,44 @@ int main(void)
 void SystemClock_Config(void)
 {
 
+//  RCC_OscInitTypeDef RCC_OscInitStruct;
+//  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+
+//  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+//  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+//  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+//  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+//  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+//  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
+//  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+
+//  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+//                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+//  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+//  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+//  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+//  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+//  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0);
+
+//  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+
+//  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+//  /* SysTick_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;

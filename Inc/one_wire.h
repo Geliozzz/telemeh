@@ -1,6 +1,6 @@
 #ifndef __ONE_WIRE_H__
 #define __ONE_WIRE_H__
-#include "stm32f4xx_hal.h"
+#include "stm32f1xx_hal.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
