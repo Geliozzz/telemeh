@@ -271,6 +271,10 @@ int isDefrostOn(void)
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
 	int i;
+	// Enable 4V
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+	HAL_Delay(1000);
+	
 	// Enable SIM900
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	HAL_Delay(1000);
