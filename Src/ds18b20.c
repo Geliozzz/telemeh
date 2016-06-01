@@ -125,14 +125,14 @@ void ds18b20_wait_for_conversion(void) {
 
 simple_float ds18b20_GetTemp1()
 {
-	ds18b20_init(GPIOD, GPIO_PIN_0);
+	ds18b20_init(GPIOA, GPIO_PIN_5);
 	ds18b20_convert_temperature_simple();
 	return ds18b20_read_temperature_simple();
 }
 
-simple_float ds18b20_GetTemp2()
+simple_float ds18b20_GetTemp2( )
 {
-	ds18b20_init(GPIOD, GPIO_PIN_0);
+	ds18b20_init(GPIOA, GPIO_PIN_6);
 	ds18b20_convert_temperature_simple();
 	return ds18b20_read_temperature_simple();
 }
