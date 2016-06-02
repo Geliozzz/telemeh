@@ -249,13 +249,13 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(iButton_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : mpwr_Pin Heater_Pin ibtnled_Pin */
-  GPIO_InitStruct.Pin = mpwr_Pin|Heater_Pin|ibtnled_Pin;
+  GPIO_InitStruct.Pin = mpwr_Pin|Heater_Pin|ibtnled_Pin | pm_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MStatus_Pin pm_Pin Power_Pin Door_Pin */
-  GPIO_InitStruct.Pin = MStatus_Pin|pm_Pin|Power_Pin|Door_Pin;
+  GPIO_InitStruct.Pin = MStatus_Pin| Power_Pin|Door_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

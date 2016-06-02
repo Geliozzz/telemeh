@@ -62,7 +62,8 @@ int GSM_WaitResp(void)
 			}
 		}
 		time_stop = HAL_GetTick();
-		if((time_stop - time_start) > WAIT_TIMEOUT) return GSM_TIMEOUT;
+		if((time_stop - time_start) > WAIT_TIMEOUT) 
+			return GSM_TIMEOUT;
 	}
 	return GSM_OK;
 }
