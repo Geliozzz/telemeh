@@ -9,16 +9,17 @@
 #include "gsm.h"
 
 #define WAIT_TIMEOUT 1000
-#define URL "\"http://minachevamir.myjino.ru/rest/add.php?imei="
+#define URL "http://minachevamir.myjino.ru/rest/add.php?imei="
+#define test_hhtp "GET /rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=5 HTTP/1.1\rHOST: minachevamir.myjino.ru       "
 
 #define MAX_FAILURES 3
 
 GSMTypeDef gsm;
 char resp[50];
-const char *settingsForInternet[] = {"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r", 
-								"AT+SAPBR=3,1,\"APN\",\"internet.beeline.ru\"\r",
-								"AT+SAPBR=3,1,\"USER\",\"beeline\"\r",
-								"AT+SAPBR=3,1,\"PWD\",\"beeline\"\r"};
+const char *settingsForInternet[] = {"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r\n", 
+								"AT+SAPBR=3,1,\"APN\",\"internet.beeline.ru\"\r\n",
+								"AT+SAPBR=3,1,\"USER\",\"beeline\"\r\n",
+								"AT+SAPBR=3,1,\"PWD\",\"beeline\"\r\n"};
 
 int strequal(const char* str1,const char* str2)
 {
@@ -286,16 +287,37 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!\n", sizeof("Polus-IO test!\n"), 1000);
 	//
-	for(i = 0; i < 5; i++)
+	for(i = 0; i < 1; i++)
 	{
-		GSM_SendCmd(gsm_uart, "AT\r", RESP_OK);
+		GSM_SendCmd(gsm_uart, "AT\r\n", RESP_OK);
 	}
+	HAL_Delay(1000);
 	//
-	GSM_SendCmd(gsm_uart, settingsForInternet[0], RESP_OK);
-	GSM_SendCmd(gsm_uart, settingsForInternet[1], RESP_OK);
-	GSM_SendCmd(gsm_uart, settingsForInternet[2], RESP_OK);
-	GSM_SendCmd(gsm_uart, settingsForInternet[3], RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=1,1\r", RESP_OK);
+//	GSM_SendCmd(gsm_uart, "AT+COPS?\r\n", RESP_OK);
+//	HAL_Delay(5000);
+//	GSM_SendCmd(gsm_uart, "AT+CPAS?\r", RESP_OK);
+//	HAL_Delay(2000);
+//	GSM_SendCmd(gsm_uart, "AT+CREG?\r", RESP_OK);
+//	HAL_Delay(2000);
+//	GSM_SendCmd(gsm_uart, "AT+CSQ\r", RESP_OK);
+//	HAL_Delay(2000);
+	GSM_SendCmd(gsm_uart, "AT+CREG? \r", RESP_OK);
+	HAL_Delay(2000);
+	GSM_SendCmd(gsm_uart, "AT+CIPSHUT\r", RESP_OK);
+	HAL_Delay(2000);
+	
+//	GSM_SendCmd(gsm_uart, settingsForInternet[0], RESP_OK);
+//	GSM_SendCmd(gsm_uart, settingsForInternet[1], RESP_OK);
+//	GSM_SendCmd(gsm_uart, settingsForInternet[2], RESP_OK);
+//	GSM_SendCmd(gsm_uart, settingsForInternet[3], RESP_OK);
+	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
+HAL_Delay(1000);
+	GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
+HAL_Delay(1000);
+	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
+	HAL_Delay(1000);
+
+
 
 
 	
@@ -305,6 +327,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
   {
     HAL_Delay(500);  
   }
+	// 
 	GSM_SendCmd(gsm_uart, "AT+CMEE=2\r", RESP_OK);
 
 	HAL_UART_Transmit(user_uart, (uint8_t*)"RSSI:", sizeof("RSSI:"), 1000);
@@ -313,15 +336,15 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_UART_Transmit(user_uart, (uint8_t*)gsm.rssi, sizeof(gsm.rssi), 1000);
 
 	HAL_Delay(2000);
-	HAL_UART_Transmit(user_uart, (uint8_t*)"Disabling GPRS", sizeof("Disabling GPRS"), 1000);
+//	HAL_UART_Transmit(user_uart, (uint8_t*)"Disabling GPRS", sizeof("Disabling GPRS"), 1000);
 
-	//Disable the GPRS
-	GSM_SendCmd(gsm_uart, "AT+SAPBR =0,1\r", RESP_OK);
+//	//Disable the GPRS
+//	GSM_SendCmd(gsm_uart, "AT+SAPBR =0,1\r", RESP_OK);
 
-	HAL_Delay(5000);
-	HAL_UART_Transmit(user_uart, (uint8_t*)"Enabling GPRS", sizeof("Enabling GPRS"), 1000);
-	//Enable the GPRS
-	GSM_SendCmd(gsm_uart, "AT+SAPBR =1,1\r", RESP_OK);
+//	HAL_Delay(5000);
+//	HAL_UART_Transmit(user_uart, (uint8_t*)"Enabling GPRS", sizeof("Enabling GPRS"), 1000);
+//	//Enable the GPRS
+//	GSM_SendCmd(gsm_uart, "AT+SAPBR =1,1\r", RESP_OK);
 
 
 	while(!IsEnableGPRS())
@@ -336,8 +359,6 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
 	HAL_Delay(5000);
-//	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
-//	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
 }
 
 void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
@@ -346,6 +367,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	int size;
 	char temp1_str[10];
 	char temp2_str[10];
+//	char ctrl_z = 0x1A;
 //	char  Door, Defrost;
 	simple_float temp;
 
@@ -366,18 +388,26 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //		fona.enableGPRS(false);
 //		resetFunc(); 
 	}
+
+	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
+	HAL_Delay(1000);
+	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
+	HAL_Delay(3000);
+
+
+	GSM_SendCmd(gsm_uart, "AT+CIPSEND = 119\r", RESP_OK);
+	HAL_Delay(1000);
 	
-	GSM_SendCmd(gsm_uart, "AT+SAPBR=2,1\r", RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
-	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
+//	GSM_SendCmd(gsm_uart, "AT+SAPBR=2,1\r", RESP_OK);
+//	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
+//	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
 	
 
-	size = sizeof("\"AT+HTTPPARA=\"URL\",") + sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=-50") + sizeof("&tr=") + 50 + sizeof("&st=-25")
+	size = sizeof("GET ") + sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=-50") + sizeof("&tr=") + 50 + sizeof("&st=-25")
 										+ sizeof("&el=") + sizeof("20") + sizeof("&dt=") 
-										+ sizeof("1") + sizeof("&door=") + sizeof("0\"\r");
+										+ sizeof("1") + sizeof("&door=") + sizeof(" HTTP/1.1");
 	http_get = malloc(size);
 		if(http_get == NULL) return;
-		strcat(http_get, "\"AT+HTTPPARA=\"URL\",");
 		strcat(http_get, URL);
 		strcat(http_get, gsm.imei);
 		strcat(http_get, "&ts=-50");
@@ -389,13 +419,13 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		strcat(http_get, "&dt=");
 		strcat(http_get, "1");
 		strcat(http_get, "&door=");
-		strcat(http_get, "0\"\r");
-		GSM_SendCmd(gsm_uart, http_get, RESP_OK);
+		strcat(http_get, " HTTP/1.1");
+		GSM_SendCmd(gsm_uart, test_hhtp, RESP_OK);
 		HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(*http_get), 1000);
 	free(http_get);
-
-	GSM_SendCmd(gsm_uart, "AT+HTTPACTION=0\r", RESP_HTTPACTION);
-	HAL_Delay(3000);
+				HAL_Delay(8000);							
+//	HAL_UART_Transmit(gsm_uart, (uint8_t*)ctrl_z, 1, 1000);
+GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
 
 //  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)
 //  {
@@ -406,8 +436,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //  else
 //  { Serial.println(F("Sucessfully send!"));}
 // Watchdog.reset();
-	GSM_SendCmd(gsm_uart, "AT+HTTPTERM\r", RESP_OK);
 
 
-	HAL_Delay(500);
+	HAL_Delay(1000);
 }
