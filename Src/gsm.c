@@ -10,7 +10,8 @@
 
 #define WAIT_TIMEOUT 1000
 #define URL "http://minachevamir.myjino.ru/rest/add.php?imei="
-#define test_hhtp "GET /rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=5 HTTP/1.1\rHOST: minachevamir.myjino.ru       "
+#define test_http "GET http://minachevamir.myjino.ru/rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=9\r\n"
+
 
 #define MAX_FAILURES 3
 
@@ -312,6 +313,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 //	GSM_SendCmd(gsm_uart, settingsForInternet[3], RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
 HAL_Delay(1000);
+// Настраиваем интернет
 	GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
 HAL_Delay(1000);
 	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
@@ -394,12 +396,12 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
 	HAL_Delay(3000);
 
-
-	GSM_SendCmd(gsm_uart, "AT+CIPSEND = 119\r", RESP_OK);
+	GSM_SendCmd(gsm_uart, "AT+CIPSEND = 111\r", RESP_OK);
 	HAL_Delay(1000);
-	
+//	
+
 //	GSM_SendCmd(gsm_uart, "AT+SAPBR=2,1\r", RESP_OK);
-//	GSM_SendCmd(gsm_uart, "AT+HTTPINIT\r", RESP_OK);
+	
 //	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
 	
 
@@ -420,10 +422,17 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		strcat(http_get, "1");
 		strcat(http_get, "&door=");
 		strcat(http_get, " HTTP/1.1");
-		GSM_SendCmd(gsm_uart, test_hhtp, RESP_OK);
-		HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(*http_get), 1000);
+		
+	//	HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(*http_get), 1000);
+										
+				
 	free(http_get);
-				HAL_Delay(8000);							
+		GSM_SendCmd(gsm_uart, test_http, RESP_OK);
+		HAL_Delay(1000);	
+		HAL_UART_Transmit(gsm_uart, (uint8_t*)26, 1, 1000);	
+		HAL_UART_Transmit(gsm_uart, (uint8_t*)26, 1, 1000);	
+		HAL_UART_Transmit(gsm_uart, (uint8_t*)0x1A, 1, 1000);	
+		HAL_Delay(1000);			
 //	HAL_UART_Transmit(gsm_uart, (uint8_t*)ctrl_z, 1, 1000);
 GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
 
