@@ -72,8 +72,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-//	simple_float temp_str;
-//	float temp;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -102,13 +101,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//		ds18b20_init(GPIOD, GPIO_PIN_0);
-//		ds18b20_convert_temperature_simple();
-//		temp_str = ds18b20_read_temperature_simple();
-//		temp = temp_str.integer + (float)temp_str.fractional / 1000;	
-//		temp++;
 		Send2Site(&huart1, &huart2);
-			HAL_Delay(1000);
+		HAL_Delay(1000);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */

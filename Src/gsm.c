@@ -9,7 +9,7 @@
 #include "gsm.h"
 
 #define WAIT_TIMEOUT 1000
-#define URL "http://minachevamir.myjino.ru/rest/add.php?imei="
+#define URL "GET http://minachevamir.myjino.ru/rest/add.php?imei="
 #define test_http "GET http://minachevamir.myjino.ru/rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=9\r\n"
 
 
@@ -81,7 +81,7 @@ int GSM_GetIMEI()
 	char resp_imei[30];
 	
 	time_start = HAL_GetTick();
-	while(strequal(resp_ok, "OK\r" ))
+	while(strequal(resp_ok, "OK" ))
 	{
 		temp = UART_getc();
 		if(temp != -1)
@@ -214,9 +214,6 @@ int GSM_GetAction(void)
 
 int IsEnableGPRS(void)
 {
-	//AT+SAPBR=2,1
-	//+SAPBR: 1,1,"xxx.xxx.xxx.xxx"
-	//OK
 	return 0;
 }
 
@@ -260,16 +257,6 @@ int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, const char* str, int type)
 	return 0;
 }
 
-int isDoorOpen(void)
-{
-	return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9);
-}
-
-int isDefrostOn(void)
-{
-	return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1);
-}
-
 
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 {
@@ -293,60 +280,33 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		GSM_SendCmd(gsm_uart, "AT\r\n", RESP_OK);
 	}
 	HAL_Delay(1000);
-	//
-//	GSM_SendCmd(gsm_uart, "AT+COPS?\r\n", RESP_OK);
-//	HAL_Delay(5000);
-//	GSM_SendCmd(gsm_uart, "AT+CPAS?\r", RESP_OK);
-//	HAL_Delay(2000);
-//	GSM_SendCmd(gsm_uart, "AT+CREG?\r", RESP_OK);
-//	HAL_Delay(2000);
-//	GSM_SendCmd(gsm_uart, "AT+CSQ\r", RESP_OK);
-//	HAL_Delay(2000);
 	GSM_SendCmd(gsm_uart, "AT+CREG? \r", RESP_OK);
 	HAL_Delay(2000);
+	// Рвем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIPSHUT\r", RESP_OK);
 	HAL_Delay(2000);
-	
-//	GSM_SendCmd(gsm_uart, settingsForInternet[0], RESP_OK);
-//	GSM_SendCmd(gsm_uart, settingsForInternet[1], RESP_OK);
-//	GSM_SendCmd(gsm_uart, settingsForInternet[2], RESP_OK);
-//	GSM_SendCmd(gsm_uart, settingsForInternet[3], RESP_OK);
 	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
-HAL_Delay(1000);
-// Настраиваем интернет
+	HAL_Delay(1000);
+	// Настраиваем интернет
 	GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
-HAL_Delay(1000);
+	HAL_Delay(1000);
+	// Устанавливаем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
 	HAL_Delay(1000);
 
-
-
-
-	
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Checking for network...", sizeof("Checking for network..."), 1000);
 	// wait registering
   while (GSM_GetNetworkStatus() != 1) 
   {
     HAL_Delay(500);  
   }
-	// 
+	// Выставляем глубину отображения ошибки
 	GSM_SendCmd(gsm_uart, "AT+CMEE=2\r", RESP_OK);
 
 	HAL_UART_Transmit(user_uart, (uint8_t*)"RSSI:", sizeof("RSSI:"), 1000);
-//	GSM_GetRSSI(gsm_uart);
-//	GSM_SendCmd(gsm_uart, "AT+CSQ\r", RESP_RSSI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)gsm.rssi, sizeof(gsm.rssi), 1000);
 
 	HAL_Delay(2000);
-//	HAL_UART_Transmit(user_uart, (uint8_t*)"Disabling GPRS", sizeof("Disabling GPRS"), 1000);
-
-//	//Disable the GPRS
-//	GSM_SendCmd(gsm_uart, "AT+SAPBR =0,1\r", RESP_OK);
-
-//	HAL_Delay(5000);
-//	HAL_UART_Transmit(user_uart, (uint8_t*)"Enabling GPRS", sizeof("Enabling GPRS"), 1000);
-//	//Enable the GPRS
-//	GSM_SendCmd(gsm_uart, "AT+SAPBR =1,1\r", RESP_OK);
 
 
 	while(!IsEnableGPRS())
@@ -356,8 +316,6 @@ HAL_Delay(1000);
 		gsm.failtures++;
 		break;
 	}
-	//IMEI
-	//memset(gsm.imei,0,sizeof(gsm.imei));
 	GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
 	HAL_Delay(5000);
@@ -369,83 +327,80 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	int size;
 	char temp1_str[10];
 	char temp2_str[10];
-//	char ctrl_z = 0x1A;
-//	char  Door, Defrost;
+	char cmd_send[20];
 	simple_float temp;
 
-//	  Watchdog.reset();
 	temp = ds18b20_GetTemp1();
+	if (temp.is_valid)
+	{
+		sprintf(temp1_str, "%d.%d2", temp.integer, temp.fractional);
+	} 
+	else sprintf(temp1_str, "-100");
 	sprintf(temp1_str, "%d.%d2", temp.integer, temp.fractional);
 	temp = ds18b20_GetTemp2();
-	sprintf(temp2_str, "%d.%d2", temp.integer, temp.fractional);
-
+	if (temp.is_valid)
+	{
+		sprintf(temp2_str, "%d.%d2", temp.integer, temp.fractional);
+	} 
+	else sprintf(temp2_str, "-100");
 	
-//  Defrost=isDefrostOn();
-//       Electricity=isElectricityOn();
-//        Watchdog.reset();
-//   Watchdog.reset();
   if(gsm.failtures >= MAX_FAILURES) 
 	{
-	//	gsm.failtures = 0;
-//		fona.enableGPRS(false);
 //		resetFunc(); 
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
 	HAL_Delay(1000);
+	GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
+	HAL_Delay(1000);
 	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
 	HAL_Delay(3000);
-
-	GSM_SendCmd(gsm_uart, "AT+CIPSEND = 111\r", RESP_OK);
-	HAL_Delay(1000);
-//	
-
-//	GSM_SendCmd(gsm_uart, "AT+SAPBR=2,1\r", RESP_OK);
 	
-//	GSM_SendCmd(gsm_uart, "AT+HTTPPARA=\"CID\",\"1\"\r", RESP_OK);
-	
-
-	size = sizeof("GET ") + sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=-50") + sizeof("&tr=") + 50 + sizeof("&st=-25")
+	size = sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=") + sizeof("&tr=") + 80 + sizeof("&st=-25")
 										+ sizeof("&el=") + sizeof("20") + sizeof("&dt=") 
-										+ sizeof("1") + sizeof("&door=") + sizeof(" HTTP/1.1");
+										+ sizeof("1") + sizeof("&door=");
+										
 	http_get = malloc(size);
-		if(http_get == NULL) return;
+	if(http_get == NULL) return;
+		memset(http_get, 0, size);
 		strcat(http_get, URL);
 		strcat(http_get, gsm.imei);
-		strcat(http_get, "&ts=-50");
+		strcat(http_get, "&ts=");
+		strcat(http_get, temp1_str);						
 		strcat(http_get, "&tr=");
-		strcat(http_get, temp1_str);
-		strcat(http_get, "&st=-25");
+		strcat(http_get, temp2_str);
+		strcat(http_get, "&st=");
+		strcat(http_get, "0");
 		strcat(http_get, "&el=");
-		strcat(http_get, "20");
+		if (isElectricityOn())strcat(http_get, "1");
+		else strcat(http_get, "0");
 		strcat(http_get, "&dt=");
-		strcat(http_get, "1");
+		if (isDefrostOn())strcat(http_get, "1");
+		else strcat(http_get, "0");
 		strcat(http_get, "&door=");
-		strcat(http_get, " HTTP/1.1");
-		
-	//	HAL_UART_Transmit(user_uart, (uint8_t*)http_get, sizeof(*http_get), 1000);
-										
-				
-	free(http_get);
-		GSM_SendCmd(gsm_uart, test_http, RESP_OK);
-		HAL_Delay(1000);	
-		HAL_UART_Transmit(gsm_uart, (uint8_t*)26, 1, 1000);	
-		HAL_UART_Transmit(gsm_uart, (uint8_t*)26, 1, 1000);	
-		HAL_UART_Transmit(gsm_uart, (uint8_t*)0x1A, 1, 1000);	
-		HAL_Delay(1000);			
-//	HAL_UART_Transmit(gsm_uart, (uint8_t*)ctrl_z, 1, 1000);
-GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
+		if (isDoorOpen())strcat(http_get, "1");
+		else strcat(http_get, "0");
+		strcat(http_get, "\r\n");
 
-//  if(!fona.HTTP_action(0,buf1,buf2,15000)||strcmp("200",buf1)!=0)
-//  {
-//      Watchdog.reset();
-//    FAILURES++; 
-//  Serial.print(F("Failure++:"));Serial.println(FAILURES);
-//  }
-//  else
-//  { Serial.println(F("Sucessfully send!"));}
-// Watchdog.reset();
+		sprintf(cmd_send, "AT+CIPSEND = %d\r", strlen(http_get));
+		GSM_SendCmd(gsm_uart, cmd_send, RESP_OK);
+		HAL_Delay(1000);
+		GSM_SendCmd(gsm_uart, http_get, RESP_OK);		
+		free(http_get);
+		HAL_Delay(8000);			
+		GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
+		HAL_Delay(1000);
+}
 
-
-	HAL_Delay(1000);
+int isDefrostOn( )
+{
+	return	HAL_GPIO_ReadPin(Heater_GPIO_Port, Heater_Pin) > 0;
+}
+int isElectricityOn( )
+{
+	return	HAL_GPIO_ReadPin(iButton_GPIO_Port, iButton_Pin) > 0;
+}
+int isDoorOpen( )
+{
+	return	HAL_GPIO_ReadPin(Door_GPIO_Port, Door_Pin) > 0;
 }

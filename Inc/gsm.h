@@ -43,7 +43,12 @@ enum
 // Инициализация GSM
 //------------------
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
-
+// Отправка данных
+//------------------
 void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart);
+// Нагреватель
+int isDefrostOn(void);
+int isElectricityOn(void);
+int isDoorOpen(void);
 
 #endif
