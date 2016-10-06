@@ -12,15 +12,15 @@
 #define URL "GET http://minachevamir.myjino.ru/rest/add.php?imei="
 #define test_http "GET http://minachevamir.myjino.ru/rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=9\r\n"
 
-
-#define MAX_FAILURES 3
+#define MAX_FAILURES 10
+#define beeline
 
 GSMTypeDef gsm;
 char resp[50];
 const char *settingsForInternet[] = {"AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r\n", 
-								"AT+SAPBR=3,1,\"APN\",\"internet.beeline.ru\"\r\n",
-								"AT+SAPBR=3,1,\"USER\",\"beeline\"\r\n",
-								"AT+SAPBR=3,1,\"PWD\",\"beeline\"\r\n"};
+								"AT+SAPBR=3,1,\"APN\",\"internet.tele2.ru\"\r\n",
+								"AT+SAPBR=3,1,\"USER\",\"\"\r\n",
+								"AT+SAPBR=3,1,\"PWD\",\"\"\r\n"};
 
 int strequal(const char* str1,const char* str2)
 {
@@ -272,7 +272,6 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_Delay(2000);
 	
 	// Wait enable module
-	
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!\n", sizeof("Polus-IO test!\n"), 1000);
 	//
 	for(i = 0; i < 1; i++)
@@ -288,7 +287,12 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
 	HAL_Delay(1000);
 	// Настраиваем интернет
-	GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
+	#ifdef beeline
+		GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
+	#else
+		GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.tele2.ru\", \"\", \"\"\r", RESP_OK);
+	#endif
+	
 	HAL_Delay(1000);
 	// Устанавливаем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
@@ -344,9 +348,16 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	} 
 	else sprintf(temp2_str, "-100");
 	
+	// if imei is empty try get imei
+	if (strlen(gsm.imei) < 15) GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
+	
   if(gsm.failtures >= MAX_FAILURES) 
-	{
-//		resetFunc(); 
+	{ 
+		// Disable 4V 
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+		HAL_Delay(1000);
+		// Reset 
+		HAL_NVIC_SystemReset();
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
@@ -398,7 +409,7 @@ int isDefrostOn( )
 }
 int isElectricityOn( )
 {
-	return	HAL_GPIO_ReadPin(iButton_GPIO_Port, iButton_Pin) > 0;
+	return	HAL_GPIO_ReadPin(Power_GPIO_Port, Power_Pin) > 0;
 }
 int isDoorOpen( )
 {

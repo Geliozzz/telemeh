@@ -7,7 +7,7 @@
 "telemeh\ds18b20.o"
 "telemeh\one_wire.o"
 "telemeh\startup_stm32f100xb.o"
-"telemeh\system_stm32f1xx.o"
+"telemeh\system_stm32f1xx_1.o"
 "telemeh\stm32f1xx_hal_gpio.o"
 "telemeh\stm32f1xx_hal_rcc.o"
 "telemeh\stm32f1xx_hal_tim.o"
@@ -20,6 +20,8 @@
 "telemeh\stm32f1xx_hal_cortex.o"
 "telemeh\stm32f1xx_hal_flash.o"
 "telemeh\stm32f1xx_hal_pwr.o"
+"telemeh\stm32f1xx_hal_wwdg.o"
+"telemeh\stm32f1xx_hal_gpio_ex.o"
 --library_type=microlib --strict --scatter "telemeh\telemeh.sct"
 --diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
