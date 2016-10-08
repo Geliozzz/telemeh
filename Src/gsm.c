@@ -1,6 +1,4 @@
 /****************************************************************
-*****************                            ********************
-*****************************************************************
 *  GSM.                                                         *
 * ------------------------------------------------------------- *
 *  АВТОР: Почепцов Олег Анатольевич	   												  *
@@ -13,6 +11,9 @@
 #define test_http "GET http://minachevamir.myjino.ru/rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=9\r\n"
 
 #define MAX_FAILURES 10
+// Stsndart delay
+#define std_delay 1000
+// Operator
 //#define beeline
 
 GSMTypeDef gsm;
@@ -259,13 +260,13 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	int i;
 	// Enable 4V
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	
 	// Enable SIM900
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay * 2);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-	HAL_Delay(2000);
+	HAL_Delay(std_delay * 2);
 	
 	// Wait enable module
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!\n", sizeof("Polus-IO test!\n"), 1000);
@@ -274,14 +275,14 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	{
 		GSM_SendCmd(gsm_uart, "AT\r\n", RESP_OK);
 	}
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	GSM_SendCmd(gsm_uart, "AT+CREG? \r", RESP_OK);
-	HAL_Delay(2000);
+	HAL_Delay(std_delay * 2);
 	// Рвем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIPSHUT\r", RESP_OK);
-	HAL_Delay(2000);
+	HAL_Delay(std_delay * 2);
 	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	// Настраиваем интернет
 	#ifdef beeline
 		GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
@@ -289,16 +290,16 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.tele2.ru\", \"\", \"\"\r", RESP_OK);
 	#endif
 	
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	// Устанавливаем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Checking for network...", sizeof("Checking for network..."), 1000);
 	// wait registering
   while (GSM_GetNetworkStatus() != 1) 
   {
-    HAL_Delay(500);  
+    HAL_Delay(std_delay);  
   }
 	// Выставляем глубину отображения ошибки
 	GSM_SendCmd(gsm_uart, "AT+CMEE=2\r", RESP_OK);
@@ -306,19 +307,19 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_UART_Transmit(user_uart, (uint8_t*)"RSSI:", sizeof("RSSI:"), 1000);
 	HAL_UART_Transmit(user_uart, (uint8_t*)gsm.rssi, sizeof(gsm.rssi), 1000);
 
-	HAL_Delay(2000);
+	HAL_Delay(std_delay * 2);
 
 
 	while(!IsEnableGPRS())
 	{
 		HAL_UART_Transmit(user_uart, (uint8_t*)"Failed to turn GPRS on", sizeof("Failed to turn GPRS on"), 1000);
-		HAL_Delay(500);
+		HAL_Delay(std_delay);
 		gsm.failtures++;
 		break;
 	}
 	GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
-	HAL_Delay(5000);
+	HAL_Delay(std_delay * 5);
 }
 
 void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
@@ -350,18 +351,18 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
   if(gsm.failtures >= MAX_FAILURES) 
 	{ 
 		// Disable 4V 
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-		HAL_Delay(1000);
+		HAL_GPIO_WritePin(pm_GPIO_Port, pm_Pin, GPIO_PIN_RESET);
+		HAL_Delay(std_delay);
 		// Reset 
 		HAL_NVIC_SystemReset();
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
-	HAL_Delay(1000);
+	HAL_Delay(std_delay);
 	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
-	HAL_Delay(3000);
+	HAL_Delay(std_delay * 3);
 	
 	size = sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=") + sizeof("&tr=") + 80 + sizeof("&st=-25")
 										+ sizeof("&el=") + sizeof("20") + sizeof("&dt=") 
@@ -391,12 +392,12 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 		sprintf(cmd_send, "AT+CIPSEND = %d\r", strlen(http_get));
 		GSM_SendCmd(gsm_uart, cmd_send, RESP_OK);
-		HAL_Delay(1000);
+		HAL_Delay(std_delay);
 		GSM_SendCmd(gsm_uart, http_get, RESP_OK);		
 		free(http_get);
-		HAL_Delay(8000);			
+		HAL_Delay(std_delay * 8);			
 		GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
-		HAL_Delay(1000);
+		HAL_Delay(std_delay);
 }
 
 int isDefrostOn( )
