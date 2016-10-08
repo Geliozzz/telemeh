@@ -36,10 +36,11 @@
 #include "stm32f1xx_it.h"
 
 /* USER CODE BEGIN 0 */
-extern UART_HandleTypeDef huart1;
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern UART_HandleTypeDef huart1;
 extern WWDG_HandleTypeDef hwwdg;
 
 /******************************************************************************/
@@ -82,7 +83,6 @@ void WWDG_IRQHandler(void)
   /* USER CODE END WWDG_IRQn 1 */
 }
 
-/* USER CODE BEGIN 1 */
 /**
 * @brief This function handles USART1 global interrupt.
 */
@@ -96,5 +96,8 @@ void USART1_IRQHandler(void)
 
   /* USER CODE END USART1_IRQn 1 */
 }
+
+/* USER CODE BEGIN 1 */
+
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

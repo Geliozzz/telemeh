@@ -13,7 +13,7 @@
 #define test_http "GET http://minachevamir.myjino.ru/rest/add.php?imei=863591022837136&ts=-50&tr=26.622&st=-25&el=20&dt=1&door=9\r\n"
 
 #define MAX_FAILURES 10
-#define beeline
+//#define beeline
 
 GSMTypeDef gsm;
 char resp[50];
@@ -45,7 +45,6 @@ int GSM_WaitResp(void)
 	
 	time_start = HAL_GetTick();
 	
-	//while(!(resp_ok[0] == 0x4F && resp_ok[1] == 0x4B))
 	while(strequal(resp_ok, "OK"))
 	{
 		temp = UART_getc();
@@ -112,11 +111,9 @@ int GSM_GetIMEI()
 */
 int GSM_GetRSSI()
 {
-//	char string[20];
 	char resp_ok[2];
 	uint32_t time_start, time_stop;
 	int temp;
-//	int i = 0;
 	
 	time_start = HAL_GetTick();
 	while(!strcmp(resp_ok, "OK"))
@@ -124,7 +121,6 @@ int GSM_GetRSSI()
 		temp = UART_getc();
 		if(temp != -1)
 		{
-			//string[i++] = temp;
 			resp_ok[0] = resp_ok[1];
 			resp_ok[1] = temp;
 		}
@@ -219,7 +215,7 @@ int IsEnableGPRS(void)
 
 void GSM_FailHandler(int fail)
 {
-	if (fail != GSM_OK) gsm.failtures++;
+	if (fail == GSM_TIMEOUT) gsm.failtures++;
 	return;
 }
 

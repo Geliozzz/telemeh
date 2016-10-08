@@ -96,6 +96,7 @@ int main(void)
   MX_WWDG_Init();
 
   /* USER CODE BEGIN 2 */
+	__HAL_TIM_ENABLE(&htim6);
 	UART_Init(&huart1);
 	GSM_Init(&huart1, &huart2);
 	one_wire_init_timer(&htim6);
@@ -165,7 +166,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 24;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 0;
+  htim6.Init.Period = 0xffff;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
     Error_Handler();
@@ -185,7 +186,7 @@ static void MX_USART1_UART_Init(void)
 {
 
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
+  huart1.Init.BaudRate = 9600;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -275,10 +276,13 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, mpwr_Pin|ibtnled_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(pm_GPIO_Port, pm_Pin, GPIO_PIN_SET);
+
   /*Configure GPIO pins : Temp1_Pin Temp0_Pin */
   GPIO_InitStruct.Pin = Temp1_Pin|Temp0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : iButton_Pin */
@@ -287,18 +291,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(iButton_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : mpwr_Pin ibtnled_Pin */
-  GPIO_InitStruct.Pin = mpwr_Pin|ibtnled_Pin;
+  /*Configure GPIO pin : mpwr_Pin */
+  GPIO_InitStruct.Pin = mpwr_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(mpwr_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : Heater_Pin MStatus_Pin pm_Pin Power_Pin 
-                           Door_Pin */
-  GPIO_InitStruct.Pin = Heater_Pin|MStatus_Pin|pm_Pin|Power_Pin 
-                          |Door_Pin;
+  /*Configure GPIO pins : Heater_Pin MStatus_Pin Power_Pin Door_Pin */
+  GPIO_InitStruct.Pin = Heater_Pin|MStatus_Pin|Power_Pin|Door_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : ibtnled_Pin pm_Pin */
+  GPIO_InitStruct.Pin = ibtnled_Pin|pm_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
