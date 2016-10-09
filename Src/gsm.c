@@ -330,16 +330,18 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_
 	HAL_IWDG_Refresh(hiwdg);
 }
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg)
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg, float volts)
 {
 	char* http_get;
 	int size;
 	char temp1_str[10];
 	char temp2_str[10];
+	char battery_str[10];
 	char cmd_send[20];
 	simple_float temp;
 
 	HAL_IWDG_Refresh(hiwdg);
+	sprintf(battery_str, "%.2f", volts);
 	temp = ds18b20_GetTemp1();
 	if (temp.is_valid)
 	{
@@ -368,8 +370,6 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
-	HAL_Delay(std_delay);
-	GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
 	HAL_Delay(std_delay);
 	HAL_IWDG_Refresh(hiwdg);
 	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
@@ -400,6 +400,8 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG
 		strcat(http_get, "&door=");
 		if (isDoorOpen())strcat(http_get, "1");
 		else strcat(http_get, "0");
+		strcat(http_get, "&bt=");
+		strcat(http_get, battery_str);
 		strcat(http_get, "\r\n");
 
 		HAL_IWDG_Refresh(hiwdg);

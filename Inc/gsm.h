@@ -45,7 +45,7 @@ enum
 void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg);
 // Отправка данных
 //------------------
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg);
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg, float volts);
 // Нагреватель
 int isDefrostOn(void);
 int isElectricityOn(void);

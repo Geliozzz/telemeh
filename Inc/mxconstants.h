@@ -59,8 +59,8 @@
 #define OTUS_TX_GPIO_Port GPIOB
 #define OTUS_RX_Pin GPIO_PIN_11
 #define OTUS_RX_GPIO_Port GPIOB
-#define ibtnled_Pin GPIO_PIN_15
-#define ibtnled_GPIO_Port GPIOB
+#define Zaryad_Pin GPIO_PIN_15
+#define Zaryad_GPIO_Port GPIOB
 #define SIM900_Tx_Pin GPIO_PIN_9
 #define SIM900_Tx_GPIO_Port GPIOA
 #define SIM900_Rx_Pin GPIO_PIN_10

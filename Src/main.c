@@ -38,9 +38,13 @@
 #include "gsm.h"
 #include "ds18b20.h"
 #define send_delay 60000
+#define battery_delay 1000
+#define battery_ubcarge 600000 // Ten minutes
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 IWDG_HandleTypeDef hiwdg;
 
 TIM_HandleTypeDef htim6;
@@ -53,7 +57,8 @@ WWDG_HandleTypeDef hwwdg;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+// battery voltage
+float volts;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,6 +71,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_WWDG_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -73,7 +79,7 @@ static void MX_IWDG_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-uint32_t time;
+uint32_t time, time_bat, time_charge;
 /* USER CODE END 0 */
 
 int main(void)
@@ -99,35 +105,50 @@ int main(void)
   MX_TIM6_Init();
   MX_WWDG_Init();
   MX_IWDG_Init();
+  MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
 	__HAL_TIM_ENABLE(&htim6);
-//	HAL_WWDG_Start_IT(&hwwdg);
-//	HAL_WWDG_Refresh(&hwwdg, 120);
-	HAL_IWDG_Start(&hiwdg);
+	HAL_ADC_Start_IT(&hadc1);
 	UART_Init(&huart1);
+	HAL_IWDG_Start(&hiwdg);
 	HAL_IWDG_Refresh(&hiwdg);
 	GSM_Init(&huart1, &huart2, &hiwdg);
 	HAL_IWDG_Refresh(&hiwdg);
 	one_wire_init_timer(&htim6);
 	HAL_IWDG_Refresh(&hiwdg);
-	time = HAL_GetTick();
+	time = 0;
+	time_bat = 0;
+	time_charge = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+		// battery cycle
+		if((time_bat + battery_delay) < HAL_GetTick())
+		{
+			time_bat = HAL_GetTick();
+			HAL_ADC_Start_IT(&hadc1);
+		}
+		HAL_IWDG_Refresh(&hiwdg);
+		// sim module cycle
 		if((time + send_delay) < HAL_GetTick())
 		{
 			time = HAL_GetTick();
-			Send2Site(&huart1, &huart2, &hiwdg);
+			Send2Site(&huart1, &huart2, &hiwdg, volts);
 			HAL_IWDG_Refresh(&hiwdg);
 		}
 		HAL_IWDG_Refresh(&hiwdg);
-  /* USER CODE END WHILE */
+		if((time_charge + battery_ubcarge) < HAL_GetTick())
+		{
+				HAL_GPIO_WritePin(Zaryad_GPIO_Port, Zaryad_Pin, GPIO_PIN_RESET);
+		}
+		
+		/* USER CODE END WHILE */
 
-  /* USER CODE BEGIN 3 */
+		/* USER CODE BEGIN 3 */
 		
 		}
   /* USER CODE END 3 */
@@ -141,6 +162,7 @@ void SystemClock_Config(void)
 
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
@@ -165,12 +187,51 @@ void SystemClock_Config(void)
     Error_Handler();
   }
 
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV2;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* ADC1 init function */
+static void MX_ADC1_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Common config 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
 }
 
 /* IWDG init function */
@@ -304,7 +365,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, Temp1_Pin|Temp0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, mpwr_Pin|ibtnled_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, mpwr_Pin|Zaryad_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(pm_GPIO_Port, pm_Pin, GPIO_PIN_SET);
@@ -333,8 +394,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : ibtnled_Pin pm_Pin */
-  GPIO_InitStruct.Pin = ibtnled_Pin|pm_Pin;
+  /*Configure GPIO pins : Zaryad_Pin pm_Pin */
+  GPIO_InitStruct.Pin = Zaryad_Pin|pm_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -342,10 +403,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_WWDG_WakeupCallback(WWDG_HandleTypeDef* hwwdg)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	HAL_WWDG_Refresh(hwwdg, 120);
-//	HAL_WWDG_Start_IT(hwwdg);
+	uint32_t code;
+	code = hadc->Instance->DR;
+	// code to volts
+	volts = (3.3F * code) / 4096;
+	// voltage on battery
+	volts = volts * 6.71854F;
+	if(volts < 12) HAL_GPIO_WritePin(Zaryad_GPIO_Port, Zaryad_Pin, GPIO_PIN_SET);
 }
 /* USER CODE END 4 */
 
