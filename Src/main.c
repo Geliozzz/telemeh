@@ -39,7 +39,7 @@
 #include "ds18b20.h"
 #define send_delay 60000
 #define battery_delay 1000
-#define battery_ubcarge 600000 // Ten minutes
+#define battery_ubcarge 900000 // 15 minutes
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
