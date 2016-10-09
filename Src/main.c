@@ -37,6 +37,7 @@
 #include "uart.h"
 #include "gsm.h"
 #include "ds18b20.h"
+#define send_delay 60000
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -72,14 +73,14 @@ static void MX_IWDG_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+uint32_t time;
 /* USER CODE END 0 */
 
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -110,16 +111,20 @@ int main(void)
 	HAL_IWDG_Refresh(&hiwdg);
 	one_wire_init_timer(&htim6);
 	HAL_IWDG_Refresh(&hiwdg);
-	
+	time = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		Send2Site(&huart1, &huart2, &hiwdg);
+		if((time + send_delay) < HAL_GetTick())
+		{
+			time = HAL_GetTick();
+			Send2Site(&huart1, &huart2, &hiwdg);
+			HAL_IWDG_Refresh(&hiwdg);
+		}
 		HAL_IWDG_Refresh(&hiwdg);
-		HAL_Delay(1000);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

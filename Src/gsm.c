@@ -211,7 +211,7 @@ int GSM_GetAction(void)
 
 int IsEnableGPRS(void)
 {
-	return 0;
+	return 1;
 }
 
 void GSM_FailHandler(int fail)
@@ -411,8 +411,6 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG
 		free(http_get);
 		HAL_IWDG_Refresh(hiwdg);
 		HAL_Delay(std_delay * 8);			
-		GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
-		HAL_Delay(std_delay);
 		HAL_IWDG_Refresh(hiwdg);
 }
 
