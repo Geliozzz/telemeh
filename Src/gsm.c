@@ -364,7 +364,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG
 		HAL_GPIO_WritePin(pm_GPIO_Port, pm_Pin, GPIO_PIN_RESET);
 		HAL_Delay(std_delay);
 		// Reset 
-		//HAL_NVIC_SystemReset();
+		HAL_NVIC_SystemReset();
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
