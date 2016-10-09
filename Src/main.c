@@ -40,6 +40,8 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+IWDG_HandleTypeDef hiwdg;
+
 TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart1;
@@ -62,6 +64,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_WWDG_Init(void);
+static void MX_IWDG_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -94,13 +97,19 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM6_Init();
   MX_WWDG_Init();
+  MX_IWDG_Init();
 
   /* USER CODE BEGIN 2 */
 	__HAL_TIM_ENABLE(&htim6);
+//	HAL_WWDG_Start_IT(&hwwdg);
+//	HAL_WWDG_Refresh(&hwwdg, 120);
+	HAL_IWDG_Start(&hiwdg);
 	UART_Init(&huart1);
-	GSM_Init(&huart1, &huart2);
+	HAL_IWDG_Refresh(&hiwdg);
+	GSM_Init(&huart1, &huart2, &hiwdg);
+	HAL_IWDG_Refresh(&hiwdg);
 	one_wire_init_timer(&htim6);
-	HAL_WWDG_Start_IT(&hwwdg);
+	HAL_IWDG_Refresh(&hiwdg);
 	
   /* USER CODE END 2 */
 
@@ -108,7 +117,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		Send2Site(&huart1, &huart2);
+		Send2Site(&huart1, &huart2, &hiwdg);
+		HAL_IWDG_Refresh(&hiwdg);
 		HAL_Delay(1000);
   /* USER CODE END WHILE */
 
@@ -127,9 +137,10 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL3;
@@ -155,6 +166,20 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* IWDG init function */
+static void MX_IWDG_Init(void)
+{
+
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+  hiwdg.Init.Reload = 4095;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
 }
 
 /* TIM6 init function */
@@ -243,9 +268,9 @@ static void MX_WWDG_Init(void)
 {
 
   hwwdg.Instance = WWDG;
-  hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
-  hwwdg.Init.Window = 127;
-  hwwdg.Init.Counter = 127;
+  hwwdg.Init.Prescaler = WWDG_PRESCALER_1;
+  hwwdg.Init.Window = 64;
+  hwwdg.Init.Counter = 64;
   if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
   {
     Error_Handler();
@@ -314,7 +339,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_WWDG_WakeupCallback(WWDG_HandleTypeDef* hwwdg)
 {
-	HAL_WWDG_Refresh(hwwdg, 127);
+	HAL_WWDG_Refresh(hwwdg, 120);
+//	HAL_WWDG_Start_IT(hwwdg);
 }
 /* USER CODE END 4 */
 

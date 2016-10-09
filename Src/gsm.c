@@ -255,18 +255,20 @@ int GSM_SendCmd(UART_HandleTypeDef *gsm_uart, const char* str, int type)
 }
 
 
-void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
+void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg)
 {
 	int i;
 	// Enable 4V
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 	HAL_Delay(std_delay);
+	HAL_IWDG_Refresh(hiwdg);
 	
 	// Enable SIM900
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 	HAL_Delay(std_delay * 2);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 	HAL_Delay(std_delay * 2);
+	HAL_IWDG_Refresh(hiwdg);
 	
 	// Wait enable module
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Polus-IO test!\n", sizeof("Polus-IO test!\n"), 1000);
@@ -278,11 +280,13 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	HAL_Delay(std_delay);
 	GSM_SendCmd(gsm_uart, "AT+CREG? \r", RESP_OK);
 	HAL_Delay(std_delay * 2);
+	HAL_IWDG_Refresh(hiwdg);
 	// Рвем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIPSHUT\r", RESP_OK);
 	HAL_Delay(std_delay * 2);
 	GSM_SendCmd(gsm_uart, "AT+CIPMUX=0\r", RESP_OK);
 	HAL_Delay(std_delay);
+	HAL_IWDG_Refresh(hiwdg);
 	// Настраиваем интернет
 	#ifdef beeline
 		GSM_SendCmd(gsm_uart, "AT+CSTT=\"internet.beeline.ru\", \"beeline\", \"beeline\"\r", RESP_OK);
@@ -294,6 +298,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	// Устанавливаем соединение
 	GSM_SendCmd(gsm_uart, "AT+CIICR\r", RESP_OK);
 	HAL_Delay(std_delay);
+	HAL_IWDG_Refresh(hiwdg);
 
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Checking for network...", sizeof("Checking for network..."), 1000);
 	// wait registering
@@ -301,6 +306,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
   {
     HAL_Delay(std_delay);  
   }
+	HAL_IWDG_Refresh(hiwdg);
 	// Выставляем глубину отображения ошибки
 	GSM_SendCmd(gsm_uart, "AT+CMEE=2\r", RESP_OK);
 
@@ -309,7 +315,7 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 
 	HAL_Delay(std_delay * 2);
 
-
+	HAL_IWDG_Refresh(hiwdg);
 	while(!IsEnableGPRS())
 	{
 		HAL_UART_Transmit(user_uart, (uint8_t*)"Failed to turn GPRS on", sizeof("Failed to turn GPRS on"), 1000);
@@ -317,12 +323,14 @@ void GSM_Init(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		gsm.failtures++;
 		break;
 	}
+	HAL_IWDG_Refresh(hiwdg);
 	GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
 	HAL_UART_Transmit(user_uart, (uint8_t*)"Connected to Cellular!", sizeof("Connected to Cellular!"), 1000);
 	HAL_Delay(std_delay * 5);
+	HAL_IWDG_Refresh(hiwdg);
 }
 
-void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
+void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart, IWDG_HandleTypeDef *hiwdg)
 {
 	char* http_get;
 	int size;
@@ -331,6 +339,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	char cmd_send[20];
 	simple_float temp;
 
+	HAL_IWDG_Refresh(hiwdg);
 	temp = ds18b20_GetTemp1();
 	if (temp.is_valid)
 	{
@@ -338,6 +347,7 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	} 
 	else sprintf(temp1_str, "-100");
 	sprintf(temp1_str, "%d.%d2", temp.integer, temp.fractional);
+	HAL_IWDG_Refresh(hiwdg);
 	temp = ds18b20_GetTemp2();
 	if (temp.is_valid)
 	{
@@ -347,22 +357,24 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 	
 	// if imei is empty try get imei
 	if (strlen(gsm.imei) < 15) GSM_SendCmd(gsm_uart, "AT+GSN\r", RESP_IMEI);
-	
+	HAL_IWDG_Refresh(hiwdg);
   if(gsm.failtures >= MAX_FAILURES) 
 	{ 
 		// Disable 4V 
 		HAL_GPIO_WritePin(pm_GPIO_Port, pm_Pin, GPIO_PIN_RESET);
 		HAL_Delay(std_delay);
 		// Reset 
-		HAL_NVIC_SystemReset();
+		//HAL_NVIC_SystemReset();
 	}
 
 	GSM_SendCmd(gsm_uart, "AT+CIFSR\r", RESP_OK);
 	HAL_Delay(std_delay);
 	GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
 	HAL_Delay(std_delay);
+	HAL_IWDG_Refresh(hiwdg);
 	GSM_SendCmd(gsm_uart, "AT+CIPSTART=\"TCP\",\"minachevamir.myjino.ru\",80\r", RESP_OK);
 	HAL_Delay(std_delay * 3);
+	HAL_IWDG_Refresh(hiwdg);
 	
 	size = sizeof(URL) + sizeof(gsm.imei) + sizeof("&ts=") + sizeof("&tr=") + 80 + sizeof("&st=-25")
 										+ sizeof("&el=") + sizeof("20") + sizeof("&dt=") 
@@ -390,14 +402,18 @@ void Send2Site(UART_HandleTypeDef *gsm_uart, UART_HandleTypeDef *user_uart)
 		else strcat(http_get, "0");
 		strcat(http_get, "\r\n");
 
+		HAL_IWDG_Refresh(hiwdg);
 		sprintf(cmd_send, "AT+CIPSEND = %d\r", strlen(http_get));
 		GSM_SendCmd(gsm_uart, cmd_send, RESP_OK);
 		HAL_Delay(std_delay);
+		HAL_IWDG_Refresh(hiwdg);
 		GSM_SendCmd(gsm_uart, http_get, RESP_OK);		
 		free(http_get);
+		HAL_IWDG_Refresh(hiwdg);
 		HAL_Delay(std_delay * 8);			
 		GSM_SendCmd(gsm_uart, "AT+CIPCLOSE\r", RESP_OK);
 		HAL_Delay(std_delay);
+		HAL_IWDG_Refresh(hiwdg);
 }
 
 int isDefrostOn( )
